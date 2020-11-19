@@ -1,0 +1,7 @@
+slackbot:
+    log_level: DEBUG
+    slack:
+        verification_token:  shit
+    channels:
+        - dev
+        - general
