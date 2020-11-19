@@ -28,24 +28,20 @@ RUN addgroup --gid 1000 slackbot
 RUN useradd -m -u 1000 -g 1000 -p slackbot slackbot
 # Create directory to hold some of the install files.
 
-#RUN cd $INSTALL && wget https://bootstrap.pypa.io/get-pip.py && python3 get-pip.py
+WORKDIR $HOME
 RUN pip3 install -U pip setuptools wheel
+RUN pip3 install git+https://github.com/hemna/slackbot_bs.git
 USER slackbot
-RUN pip3 install --user git+https://github.com/hemna/slackbot_bs.git
 
 # add all confs and extras to the install
 # based on CONF env, copy the dirs to the install using CMD cp
 
 # override this to run another configuration
-WORKDIR $HOME
 ENV CONF default
 ADD conf $HOME/
 ADD bin/run.sh $HOME/
-#RUN chmod 755 $HOME/run.sh
 
 EXPOSE 6000
-VOLUME [ "/home/slackbot/conf/slackbot.yaml" ]
-
+VOLUME [ "/home/slackbot/conf" ]
 
 CMD $HOME/run.sh
-
