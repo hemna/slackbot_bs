@@ -44,7 +44,7 @@ ADD bin/run.sh $HOME/
 #RUN chmod 755 $HOME/run.sh
 
 EXPOSE 6000
-VOLUME [ /home/slackbot/conf/slackbot.yaml ]
+VOLUME [ "/home/slackbot/conf/slackbot.yaml" ]
 
 
 CMD $HOME/run.sh
