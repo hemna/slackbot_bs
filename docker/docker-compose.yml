@@ -2,9 +2,11 @@ version: '3.4'
 
 services:
     slackbot_bs:
-        image: 192.168.1.3:5000/hemna/slackbot_bs
+        image: 192.168.1.3:5000/hemna/slackbot_bs:latest
         container_name: slackbot_bs
         user: 1000:1000
         ports:
             - 6000:6000
+        volumes:
+            - /opt/docker/slackbot/conf/slackbot.yaml:/home/slackbot/conf/slackbot.yaml
         restart: unless-stopped
