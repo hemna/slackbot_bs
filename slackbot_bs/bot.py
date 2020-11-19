@@ -12,16 +12,13 @@ from slack_sdk.errors import SlackApiError
 
 from slackbot_bs import buzzword as bz
 from slackbot_bs import table_flip as tf
+from slackbot_bs import constants
 import slackbot_bs
 
 LOG = logging.getLogger(__name__)
 
-#signing_secret = "c74a70c29924ab8e8aa44582fd1b908b"
 signing_secret = os.getenv("SLACKBOT_SIGNING_SECRET")
 bot_token = os.getenv('SLACK_BOT_TOKEN')
-
-verification_token = "IenNbLrgVSroreirIeYAndG7"
-hemna_channel = "C01EHL17C07"
 
 bp = flask.Blueprint('slack_events', __name__)
 slack_events_adapter = SlackEventAdapter(signing_secret, "/slack/events", bp)
@@ -43,6 +40,40 @@ def handle_message(event_data):
         channel = message["channel"]
         message = "Hello <@%s>! :tada:" % message["user"]
         swc.chat_postMessage(channel=channel, text=message)
+
+
+@bp.route('/help', methods=['post'])
+def help():
+    if flask.request.form['token'] == verification_token:
+        msg = constants.HELP_BLOCK
+        try:
+            channel = flask.request.form['channel_name']
+            response = swc.chat_postMessage(channel=channel, blocks=msg)
+        except SlackApiError as e:
+            # You will get a SlackApiError if "ok" is False
+            assert e.response["ok"] is False
+            assert e.response["error"]  # str like 'invalid_auth', 'channel_not_found'
+            print(f"Got an error: {e.response['error']}")
+
+        payload = {'text': msg}
+        return flask.jsonify(payload)
+
+
+@bp.route('/wx', methods=['post'])
+def weather():
+    if flask.request.form['token'] == verification_token:
+        msg = "WX: This shit is still being worked on."
+        try:
+            channel = flask.request.form['channel_name']
+            response = swc.chat_postMessage(channel=channel, text=msg)
+        except SlackApiError as e:
+            # You will get a SlackApiError if "ok" is False
+            assert e.response["ok"] is False
+            assert e.response["error"]  # str like 'invalid_auth', 'channel_not_found'
+            print(f"Got an error: {e.response['error']}")
+
+        payload = {'text': msg}
+        return flask.jsonify(payload)
 
 
 @bp.route('/buzzword', methods=['POST'])
@@ -129,6 +160,34 @@ def get_config(config_file):
         exit(0)
 
 
+
+def join_channels(slackbot_config):
+    channels = slackbot_config['channels']
+    try:
+        channel_list = swc.conversations_list()
+        #LOG.debug(channel_list)
+        for channel in channels:
+            channel_id = None
+            for info in channel_list['channels']:
+                if info['name'] == channel:
+                    channel_id = info['id']
+
+            if not channel_id:
+                LOG.error("Can't find channel {}".format(channel))
+            else:
+                #info = swc.conversations_info(channel=channel_id)
+                swc.conversations_join(channel=channel_id)
+                #msg = "I'm back online bitches!"
+                #response = swc.chat_postMessage(channel=channel_id,
+                #                                text=msg)
+
+    except SlackApiError as e:
+        # You will get a SlackApiError if "ok" is False
+        assert e.response["ok"] is False
+        assert e.response["error"]  # str like 'invalid_auth', 'channel_not_found'
+        print(f"Got an error: {e.response['error']}")
+
+
 @click.command()
 @click.option("--port", metavar="<port>", default=9102,
               help="specify exporter serving port")
@@ -136,6 +195,7 @@ def get_config(config_file):
               help="path to rest config")
 def main(port, config):
     """Console script for slackbot_bs."""
+    global verification_token
 
     config_obj = get_config(config)
     slackbot_config = config_obj['slackbot']
@@ -154,18 +214,10 @@ def main(port, config):
         port,
         config
     ))
+    verification_token = slackbot_config['slack']['verification_token']
 
-    try:
-        info = swc.conversations_info(channel=hemna_channel)
+    join_channels(slackbot_config)
 
-        #msg = "Penis!"
-        #response = swc.chat_postMessage(channel='#dev', text=msg)
-        #assert response["message"]["text"] == msg
-    except SlackApiError as e:
-        # You will get a SlackApiError if "ok" is False
-        assert e.response["ok"] is False
-        assert e.response["error"]  # str like 'invalid_auth', 'channel_not_found'
-        print(f"Got an error: {e.response['error']}")
     app = flask.Flask(__name__)
 
     app.register_blueprint(bp)

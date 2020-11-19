@@ -1,2 +1,7 @@
 slackbot:
     log_level: DEBUG
+    slack:
+        verification_token:  "something here"
+        channels:
+            - hemna
+            - dev
