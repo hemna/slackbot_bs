@@ -36,6 +36,7 @@ def _user_message(user_id: str, channel: str):
 @slack_events_adapter.on("message")
 def handle_message(event_data):
     message = event_data["event"]
+    channel = message["channel"]
     if message.get("subtype") is None and "buzzword" in message.get('text'):
         msg = bz.buzzword()
         swc.chat_postMessage(channel=channel, text=msg)
