@@ -1,4 +1,9 @@
+import logging
 import random
+import tabulate
+
+
+LOG = logging.getLogger(__name__)
 
 HI_LIST = [
     "( ･ω･)ﾉ",
@@ -31,89 +36,108 @@ HI_LIST = [
     "|ʘ‿ʘ)╯"
 ]
 
-# Map the .tf <command> to a function
-COMMAND_MAPPING = {
-    "help": "_help",
+dynamic_map = {
+    "hello": {
+        "short": "hi",
+        "flip": HI_LIST,
+        "desc": "Hellow TF!",
+    },
 
-    "hi": "_hello",
-    "hello": "_hello",
+    "battle": {
+        "short": None,
+        "flip": "(╯°□°)╯︵ ┻━┻ ︵ ╯(°□° ╯)",
+        "desc": "Time to battle!"
+    },
 
-    "battle": "_battle",
-    "b": "_battle",
+    "covfefe": {
+        "short": "c",
+        "flip": "༼ノಠل͟ಠ༽ノ ︵ ┻━┻",
+        "desc": "Trump covfefe TF!"
+    },
 
-    "covfefe": "_covfefe",
-    "c": "_covfefe",
+    "dude": {
+        "short": "d",
+        "flip": "(╯°Д°）╯︵ /(.□ . )",
+        "desc": "Dude....."
+    },
 
-    "dude": "_dude",
-    "d": "_dude",
+    "fat": {
+        "short": None,
+        "flip": "(ノ ゜Д゜)ノ ︵ ┻━┻",
+        "desc": "Fat MF'ing TF!"
+    },
 
-    "fat": "_fat",
-    "f": "_fat",
+    "finger": {
+        "short": "f",
+        "flip": "╭∩╮◕ل͜◕)╭∩╮  ︵┻┻",
+        "desc": "Give em the finger!",
+    },
 
-    "finger": "_finger",
-    "g": "_finger",
+    "hercules": {
+        "short": "h",
+        "flip": "(/ .□.) ︵╰(゜Д゜)╯︵ /(.□. )",
+        "desc": "Super herculean TF",
+    },
+    "jedi": {
+        "short": "j",
+        "flip": "(._.) ~ ︵ ┻━┻",
+        "desc": "Use the force Luke!"
+    },
 
-    "hercules": "_hercules",
-    "h": "_hercules",
+    "magic": {
+        "short": "m",
+        "flip": "༼∩ຈل͜ຈ༽つ━☆ﾟ.*･｡ﾟ ︵ ┻━┻",
+        "desc": "Magic TF!"
+    },
 
-    "jedi": "_jedi",
-    "j": "_jedi",
+    "rage": {
+        "short": "r",
+        "flip": "(ノಠ益ಠ)ノ彡┻━┻",
+        "desc": "Super pissed TF!"
+    },
+    "table": {
+        "short": "t",
+        "flip": "(╯°□°)╯︵ ┻━┻",
+        "desc": "Flip the standard table"
+    },
 
-    "magic": "_magic",
-    "m": "_magic",
+    "bear": {
+        "short": "b",
+        "flip": "ʕノ•ᴥ•ʔノ ︵ ┻━┻",
+        "desc": "Awe, a cute cuddle TF"
+    },
 
-    "rage": "_rage",
-    "r": "_rage",
-
-    "table": "_table",
-    "t": "_table",
-
-    "bear": "_bear",
-    "z": "_bear",
 }
 
 
 def _help(nick, text):
-    #flip = formatting.color("(╯°□°)╯︵ ┻━┻ ", formatting.colors.RED)
+
+    help_list = []
+    for flip in sorted(dynamic_map.keys()):
+        flip_type = type(dynamic_map[flip]['flip'])
+        if flip_type is str:
+            flip_str = dynamic_map[flip]['flip']
+        elif flip_type is list:
+            dynamic_map[flip]['flip'][0]
+
+        help_list.append(
+            [flip, dynamic_map[flip]['short'],
+             dynamic_map[flip]['desc'], flip_str]
+        )
+
+    flip_table = tabulate.tabulate(
+        help_list, headers=['Name', 'Short', 'Description', 'flip'])
+
     msg = (
         "```\n"
         "Welcome to Table flipping bot.  (╯°□°)╯︵ ┻━┻ \n"
         "Type /tf <command>\n"
         "Commands\n"
-        "help                 - This help\n"
-        "hi                   - Hello Table Flip!\n"
-        "covfefe (c)          - Covfefe table flip\n"
-        "fat (f)              - Fat table flip\n"
-        "finger (g)           - The finger table flip\n"
-        "jedi (j)             - Jedi table flip.\n"
-        "hercules (h)         - Herculese table flip\n"
-        "magic (m)            - Magic table flip\n"
-        "rage (r)             - Rage table flip\n"
-        "table (t)            - Standard table flip\n"
-        "bear (b)             - Bear table flip\n"
-        "```"
-
+        "{}\n"
+        "```".format(flip_table)
     )
-    #bot.say(flip)
-    #bot.say("@!           - Hello.")
-    #bot.say("@!b <nick>   - Battle another nick table flip.")
-    ##bot.say("@!c          - Covfefe table flip.")
-    #bot.say("@!d <nick>   - Battle win another nick table flip.")
-    #bot.say("@!f          - Fat table flip.")
-    #bot.say("@!g          - The Finger table flip.")
-    #bot.say("@!h          - Hercules table flip.")
-    #bot.say("@!j          - Jedi table flip.")
-    #bot.say("@!m          - Magic table flip.")
-    #bot.say("@!r          - Rage table flip.")
-    #bot.say("@!t          - Standard table flip.")
-    #bot.say("@!z          - Bear table flip.")
 
     return msg
-
-
-#def _prep_colors(nick, flip):
-#    return (formatting.color(nick, formatting.colors.BLUE),
-#            formatting.color(flip, formatting.colors.RED))
 
 
 def _build_msg(nick, flip, replace_str=None):
@@ -138,60 +162,33 @@ def hello(nick, text):
     return _hello(nick, text)
 
 
-def _covfefe(nick, text):
-    flip = "༼ノಠل͟ಠ༽ノ ︵ ┻━┻"
-    return _build_msg(nick, flip)
-
-
-def _fat(nick, text):
-    flip = "(ノ ゜Д゜)ノ ︵ ┻━┻"
-    return _build_msg(nick, flip)
-
-
-def _finger(nick, text):
-    flip = "╭∩╮◕ل͜◕)╭∩╮  ︵┻┻"
-    return _build_msg(nick, flip)
-
-
-def _hercules(nick, text):
-    flip = "(/ .□.) ︵╰(゜Д゜)╯︵ /(.□. )"
-    return _build_msg(nick, flip)
-
-
-def _jedi(nick, text):
-    flip = "(._.) ~ ︵ ┻━┻"
-    return _build_msg(nick, flip)
-
-
-def _magic(nick, text):
-    flip = "༼∩ຈل͜ຈ༽つ━☆ﾟ.*･｡ﾟ ︵ ┻━┻"
-    return _build_msg(nick, flip)
-
-
-def _rage(nick, text):
-    flip = "(ノಠ益ಠ)ノ彡┻━┻"
-    return _build_msg(nick, flip)
-
-
-def _table(nick, text):
-    flip = "(╯°□°)╯︵ ┻━┻ "
-    return _build_msg(nick, flip)
-
-def _bear(nick, text):
-    flip = "ʕノ•ᴥ•ʔノ ︵ ┻━┻"
-    return _build_msg(nick, flip)
+def get_flip(key):
+    try:
+        flip = dynamic_map[key]
+        return flip
+    except Exception as e:
+        # see if there is a shorthand
+        for f in dynamic_map:
+            if dynamic_map[f]['short'] == key:
+                return dynamic_map[f]
+        raise e
 
 
 def tf(nick, text):
     """Send a table flip to a channel."""
 
     try:
-        func = COMMAND_MAPPING[text]
+        flip = get_flip(text)
     except Exception as e:
+        LOG.exception(e)
         msg = "I don't know what you want me to do"
         msg = "{}\n {}".format(msg,
                                _help(nick, text))
     else:
-        msg = globals()[func](nick, text)
+        flipit = flip['flip']
+        flip_type = type(flipit)
+        if flip_type is list:
+            flipit = flipit[random.randint(0, len(flipit)-1)]
+        msg = _build_msg(nick,flipit)
 
     return msg
