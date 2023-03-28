@@ -9,6 +9,7 @@ import yaml
 from slack_sdk import WebClient
 from slackeventsapi import SlackEventAdapter
 from slack_sdk.errors import SlackApiError
+from dotenv import load_dotenv
 
 from slackbot_bs import buzzword as bz
 from slackbot_bs import table_flip as tf
@@ -17,8 +18,20 @@ import slackbot_bs
 
 LOG = logging.getLogger(__name__)
 
+env_path = ".env"
+load_dotenv(env_path)
+
+print(f"SLACK_BOT_TOKEN {os.environ['SLACKBOT_TOKEN']}")
+print(f"SLACK_SIGNING_SECRET {os.environ['SLACKBOT_SIGNING_SECRET']}")
+
 signing_secret = os.getenv("SLACKBOT_SIGNING_SECRET")
-bot_token = os.getenv('SLACK_BOT_TOKEN')
+if not signing_secret:
+    click.echo("No SLACKBOT_SIGNING_SECRET env var set")
+    sys.exit(-1)
+bot_token = os.getenv('SLACKBOT_TOKEN')
+if not bot_token:
+    click.echo("No SLACKBOT_TOKEN env var set")
+    sys.exit(-1)
 
 bp = flask.Blueprint('slack_events', __name__)
 slack_events_adapter = SlackEventAdapter(signing_secret, "/slack/events", bp)
@@ -185,11 +198,11 @@ def join_channels(slackbot_config):
         # You will get a SlackApiError if "ok" is False
         assert e.response["ok"] is False
         assert e.response["error"]  # str like 'invalid_auth', 'channel_not_found'
-        print(f"Got an error: {e.response['error']}")
+        LOG.error(f"Got an error: {e.response['error']}")
 
 
 @click.command()
-@click.option("--port", metavar="<port>", default=9102,
+@click.option("--port", metavar="<port>", default=3000,
               help="specify exporter serving port")
 @click.option("-c", "--config", metavar="<config>",
               help="path to rest config")
