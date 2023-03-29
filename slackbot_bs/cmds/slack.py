@@ -49,9 +49,18 @@ def event_test(body: dict, say, logger: logging.Logger):
     say(f"What's up? <@{body['event']['user']}>")
 
 
+# We do /repeat-stats-test for home development through ngrok
 
-@app.command('/aprsd-test')
-def aprsd_test(body: dict, ack: Ack, respond: Respond, command):
+@app.command('/repeat-stats-test')
+def repeat_stats_test(body: dict, ack: Ack, respond: Respond, command):
+   _aprsd_stats(body, ack, respond, command)
+
+@app.command('/repeat-stats')
+def repeat_stats_test(body: dict, ack: Ack, respond: Respond, command):
+    _aprsd_stats(body, ack, respond, command)
+
+
+def _aprsd_stats(body: dict, ack: Ack, respond: Respond, command):
     ack(
         text="Accepted Request",
         blocks=[
@@ -61,7 +70,6 @@ def aprsd_test(body: dict, ack: Ack, respond: Respond, command):
             )
         ],
     )
-    LOG.debug(f"/aprsd-test CALLED ")
     cl = rpc_client.RPCClient()
     stats = cl.get_stats_dict()
     count = 0
@@ -133,5 +141,6 @@ def bot(ctx):
     """Run the bot."""
     # Dump all the config options now.
     CONF.log_opt_values(LOG, logging.DEBUG)
+    LOG.info("Starting slackbot listening on port {CONF.slack_web_port}")
     app.start(port=CONF.slack_web_port)
 
