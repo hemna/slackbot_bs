@@ -23,3 +23,13 @@ services:
         environment:
           - SLACK_SIGNING_SECRET=VALUE
           - SLACK_BOT_TOKEN=VALUE
+          - COLUMNS=250
+        labels:
+          com.centurylinklabs.watchtower.enable: "true"
+          deunhealth.restart.on.unhealthy: "true"
+
+
+networks:
+  default:
+    name: aprsd
+    external: true

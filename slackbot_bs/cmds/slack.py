@@ -141,6 +141,6 @@ def bot(ctx):
     """Run the bot."""
     # Dump all the config options now.
     CONF.log_opt_values(LOG, logging.DEBUG)
-    LOG.info("Starting slackbot listening on port {CONF.slack_web_port}")
+    LOG.info(f"Starting slackbot listening on port {CONF.slack_web_port}")
     app.start(port=CONF.slack_web_port)
 
