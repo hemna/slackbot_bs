@@ -1,12 +1,25 @@
 version: '3.4'
 
+
 services:
     slackbot_bs:
-        image: 192.168.1.3:5000/hemna/slackbot_bs:latest
+        build:
+          context: .
+          dockerfile: Dockerfile
+          tags:
+            - "hemna6969/slackbot_bs:latest"
+          platforms:
+            - "linux/amd64"
+            - "linux/arm64"
+            - "linux/aarch64"
+        image: hemna6969/slackbot_bs:latest
         container_name: slackbot_bs
         user: 1000:1000
         ports:
-            - 6000:6000
+            - 3000:3000
         volumes:
-            - /opt/docker/slackbot/conf/slackbot.yaml:/home/slackbot/conf/slackbot.yaml
+            - ~/.config/slackbot_bs/slackbot_bs.conf:/tmp/slackbot_bs.conf
         restart: unless-stopped
+        environment:
+          - SLACK_SIGNING_SECRET=VALUE
+          - SLACK_BOT_TOKEN=VALUE
