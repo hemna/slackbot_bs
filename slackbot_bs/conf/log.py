@@ -46,11 +46,11 @@ logging_opts = [
         default=None,
         help="File to log to",
     ),
-    cfg.StrOpt(
-        "logformat",
-        default=DEFAULT_LOG_FORMAT,
-        help="Log file format, unless rich_logging enabled.",
-    ),
+    # cfg.StrOpt(
+    #     "logformat",
+    #     default=DEFAULT_LOG_FORMAT,
+    #     help="Log file format, unless rich_logging enabled.",
+    # ),
 ]
 
 
