@@ -5,9 +5,10 @@ import queue
 import sys
 
 from oslo_config import cfg
+from loguru import logger
 
 from slackbot_bs import conf
-from slackbot_bs.logging import rich as slackbot_logging
+from slackbot_bs.conf import log as conf_log
 
 
 CONF = cfg.CONF
@@ -15,55 +16,106 @@ LOG = logging.getLogger("SLACKBOT_BS")
 logging_queue = queue.Queue()
 
 
-# Setup the logging faciility
-# to disable logging to stdout, but still log to file
+class QueueLatest(queue.Queue):
+    """Custom Queue to keep only the latest N items.
+
+    This prevents the queue from blowing up in size.
+    """
+    def put(self, *args, **kwargs):
+        try:
+            super().put(*args, **kwargs)
+        except queue.Full:
+            self.queue.popleft()
+            super().put(*args, **kwargs)
+
+
+logging_queue = QueueLatest(maxsize=200)
+
+
+class InterceptHandler(logging.Handler):
+    def emit(self, record):
+        # get corresponding Loguru level if it exists
+        try:
+            level = logger.level(record.levelname).name
+        except ValueError:
+            level = record.levelno
+
+        # find caller from where originated the logged message
+        frame, depth = sys._getframe(6), 6
+        while frame and frame.f_code.co_filename == logging.__file__:
+            frame = frame.f_back
+            depth += 1
+
+        logger.opt(depth=depth, exception=record.exc_info).log(level, record.getMessage())
+
+
+# Setup the log faciility
+# to disable log to stdout, but still log to file
 # use the --quiet option on the cmdln
-def setup_logging(loglevel, quiet):
-    log_level = conf.log.LOG_LEVELS[loglevel]
-    LOG.setLevel(log_level)
-    date_format = CONF.logging.date_format
-    rh = None
-    fh = None
+def setup_logging(loglevel=None, quiet=False):
+    if not loglevel:
+        log_level = CONF.logging.log_level
+    else:
+        log_level = conf_log.LOG_LEVELS[loglevel]
 
-    rich_logging = False
-    if CONF.logging.get("rich_logging", False) and not quiet:
-        log_format = "%(message)s"
-        log_formatter = logging.Formatter(fmt=log_format, datefmt=date_format)
-        rh = slackbot_logging.APRSDRichHandler(
-            show_thread=True, thread_width=20,
-            rich_tracebacks=True, omit_repeated_times=False,
+    # intercept everything at the root logger
+    logging.root.handlers = [InterceptHandler()]
+    logging.root.setLevel(log_level)
+
+    imap_list = [
+        "imapclient.imaplib", "imaplib", "imapclient",
+        "imapclient.util",
+    ]
+    aprslib_list = [
+        "aprslib",
+        "aprslib.parsing",
+        "aprslib.exceptions",
+    ]
+    webserver_list = [
+        "werkzeug",
+        "werkzeug._internal",
+        "socketio",
+        "urllib3.connectionpool",
+        "chardet",
+        "chardet.charsetgroupprober",
+        "chardet.eucjpprober",
+        "chardet.mbcharsetprober",
+    ]
+
+    # We don't really want to see the aprslib parsing debug output.
+    disable_list = imap_list + aprslib_list + webserver_list
+
+    # remove every other logger's handlers
+    # and propagate to root logger
+    for name in logging.root.manager.loggerDict.keys():
+        logging.getLogger(name).handlers = []
+        if name in disable_list:
+            logging.getLogger(name).propagate = False
+        else:
+            logging.getLogger(name).propagate = True
+
+
+    handlers = [
+        {
+            "sink": sys.stdout,
+            "serialize": False,
+            "format": CONF.logging.logformat,
+            "colorize": True,
+            "level": log_level,
+        },
+    ]
+
+    if CONF.logging.logfile:
+        handlers.append(
+            {
+                "sink": CONF.logging.logfile,
+                "serialize": False,
+                "format": CONF.logging.logformat,
+                "colorize": False,
+                "level": log_level,
+            },
         )
-        rh.setFormatter(log_formatter)
-        LOG.addHandler(rh)
-        rich_logging = True
 
-    log_file = CONF.logging.logfile
-    log_format = CONF.logging.logformat
-    log_formatter = logging.Formatter(fmt=log_format, datefmt=date_format)
-
-    if log_file:
-        fh = RotatingFileHandler(log_file, maxBytes=(10248576 * 5), backupCount=4)
-        fh.setFormatter(log_formatter)
-        LOG.addHandler(fh)
-
-    if not quiet and not rich_logging:
-        sh = logging.StreamHandler(sys.stdout)
-        sh.setFormatter(log_formatter)
-        LOG.addHandler(sh)
-
-
-def setup_logging_no_config(loglevel, quiet):
-    log_level = conf.log.LOG_LEVELS[loglevel]
-    LOG.setLevel(log_level)
-    log_format = CONF.logging.logformat
-    date_format = CONF.logging.date_format
-    log_formatter = logging.Formatter(fmt=log_format, datefmt=date_format)
-    fh = NullHandler()
-
-    fh.setFormatter(log_formatter)
-    LOG.addHandler(fh)
-
-    if not quiet:
-        sh = logging.StreamHandler(sys.stdout)
-        sh.setFormatter(log_formatter)
-        LOG.addHandler(sh)
+    # configure loguru
+    logger.configure(handlers=handlers)
+    logger.level("DEBUG", color="<fg #BABABA>")

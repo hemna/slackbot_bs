@@ -8,3 +8,4 @@ slack_bolt
 aprsd>=3.0.0
 oslo.config
 rich
+loguru
