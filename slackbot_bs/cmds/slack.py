@@ -12,7 +12,7 @@ from slack_sdk.models.blocks import (
     MarkdownTextObject
 )
 
-from aprsd.rpc import client as rpc_client
+from aprsd.threads import stats as stats_threads
 
 from slackbot_bs.slackbot_bs import cli
 from slackbot_bs import cli_helper
@@ -32,6 +32,27 @@ bot_token = os.getenv('SLACK_BOT_TOKEN')
 if not bot_token:
     click.echo("No SLACK_BOT_TOKEN env var set")
     sys.exit(-1)
+
+
+def fetch_stats():
+    stats_obj = stats_threads.StatsStore()
+    stats_obj.load()
+    now = datetime.datetime.now()
+    time_format = "%m-%d-%Y %H:%M:%S"
+    stats_data = stats_obj.data
+    seen_list = stats_data.get("SeenList", [])
+    for call in seen_list:
+        # add a ts 2021-11-01 16:18:11.631723
+        date = datetime.datetime.strptime(str(seen_list[call]['last']), "%Y-%m-%d %H:%M:%S.%f")
+        seen_list[call]["ts"] = int(datetime.datetime.timestamp(date))
+    stats = {
+        "time": now.strftime(time_format),
+        "stats": stats_data,
+    }
+
+    LOG.warning(stats)
+    return stats
+
 
 # Create the slack app
 app = App(token=os.environ['SLACK_BOT_TOKEN'],
@@ -70,8 +91,7 @@ def _aprsd_stats(body: dict, ack: Ack, respond: Respond, command):
             )
         ],
     )
-    cl = rpc_client.RPCClient()
-    stats = cl.get_stats_dict()
+    stats = fetch_stats()
     count = 0
     for entry in stats['aprsd']['seen_list']:
         count += 1
